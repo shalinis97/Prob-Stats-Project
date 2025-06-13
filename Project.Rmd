@@ -1,0 +1,114 @@
+---
+title: "Statistical Analysis on Student Performance - Probability & Stats Project"
+author: "Himanshu - Jaival - Shalini "
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r full-analysis, echo=TRUE}
+# Set working directory and clear environment
+setwd('/Users/shalini/Desktop/P&S Project')
+rm(list=ls())
+
+# Load the dataset
+# The dataset is from kaggle. 
+# Link : https://www.kaggle.com/datasets/spscientist/students-performance-in-exams/
+student_data <- read.csv('StudentsPerformance.csv', stringsAsFactors = TRUE)
+head(student_data)
+
+# 1. Descriptive Statistics
+# We have 5 categorical columns and 3 numercial columns. Some key insights are there are more women.
+# Group C ethnicity has the highest count. Most parents have attended college. 
+# Most of the students use standard lunch. Most of them have not taken the test prep course. 
+# The mean score of math is 66.1, reading is 69.2 and writing is 68.1.
+summary(student_data)
+
+# We can see from the correlation matrix that math and reading, math and writing has a high correlation of 0.818 and 0.803 resp. Reading and writing has the highest correlation at 0.955.
+cor(student_data[, c(6, 7, 8)])
+
+# 2. One Sample and Two Sample T-Test
+
+# One-sample t-tests
+# p is high → null will fly: Null hypothesis is accepted. 
+# sample mean is close to population mean
+t.test(student_data$math.score, mu = 66.5)
+
+# p is low → null will go: Null hypothesis is rejected. 
+# sample mean is significantly different
+t.test(student_data$math.score, mu = 70)
+
+
+# Two-sample t-test
+# p is low → null will go: Null hypothesis is rejected. 
+# Means differ significantly between genders
+t.test(math.score ~ gender, data = student_data)
+
+# 3. One-Way ANOVA
+
+# ANOVA: math score ~ parental education level
+# We are comparing math scores across 6 levels of parental education (hence df = 5).
+# The F-statistic is 6.522, and the p-value is 5.59e-06 (very small).
+# Conclusion: The difference in mean math scores is statistically significant 
+# across different parental education levels.
+aov_test1 <- aov(math.score ~ parental.level.of.education, data = student_data)
+summary(aov_test1)
+
+
+# ANOVA: math score ~ gender
+# We are comparing math scores between 2 gender groups (df = 1).
+# The F-statistic is 28.98, and the p-value is 9.12e-08.
+# Conclusion: There is a statistically significant difference in 
+# math scores between genders.
+aov_test2 <- aov(math.score ~ gender, data = student_data)
+summary(aov_test2)
+
+
+# ANOVA: math score ~ race/ethnicity
+# We are comparing math scores across 5 racial/ethnic groups (df = 4).
+# The F-statistic is 14.59, and the p-value is 1.37e-11.
+# Conclusion: There is a highly significant difference in mean math scores 
+# between at least some race/ethnicity groups.
+aov_test3 <- aov(math.score ~ race.ethnicity, data = student_data)
+summary(aov_test3)
+
+
+# 4. Linear Regression
+
+# Simple Linear Regression
+# We fitted a simple linear regression model to examine the effect of parental level of education on math scores
+
+#While the model is statistically significant overall (F(5, 994) = 6.52, p < 0.001), 
+#parental education alone is not a strong predictor of math performance.
+#Only the lowest education categories show significant negative effects,
+#suggesting that students with less-educated parents may be at a disadvantage, 
+#but other variables likely play a much larger role in explaining student math scores.
+
+
+data.lm = lm(math.score ~ parental.level.of.education, data = student_data)
+summary(data.lm)
+
+# Multiple Linear Regression
+
+# We then fitted a multiple linear regression model including parental education, gender, test preparation course
+
+#This model shows that gender and test preparation completion are strong predictors of math scores,
+#while parental education continues to show a negative impact at lower levels.
+#Although the explanatory power is still limited (Adjusted R² = 0.086), the model gives a more 
+#nuanced picture than using parental education alone. The p value is very low at <2e-16 and we reject the null hypothesis.
+#Parental.level.of.education, gender, test.preparation.course has an influence on math score.
+
+data.mlm = lm(math.score ~ parental.level.of.education + gender + test.preparation.course, data = student_data)
+summary(data.mlm)
+
+# 5.Chi-Square test
+#Check if two categorical varaiables are related to each other.
+# Create contingency table 
+data.chi <- table(student_data$gender, student_data$test.preparation.course)
+
+# Perform Chi-Square Test of Independence
+#Here we get the p value as 0.9. P value is high, null will fly.Null hypothesis will be accepted. 
+#These two categorical variables are no related to each other.
+chisq.test(data.chi)
+
